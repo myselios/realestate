@@ -1,0 +1,20 @@
+{
+  "name": "hsmc-realestate",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "dev:web": "pnpm --filter web dev",
+    "build": "pnpm --filter '*' build",
+    "start": "pnpm --filter api start",
+    "prisma:generate": "pnpm --filter api exec prisma generate",
+    "db:pull": "pnpm --filter api exec prisma db pull"
+  },
+  "workspaces": [
+    "packages/api",
+    "packages/web"
+  ],
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+} 
