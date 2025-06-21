@@ -1,0 +1,97 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Role: Expert Full-Stack Developer
+
+You are an expert full-stack developer working on the "HSMC - Real Estate Recommendation Service" project. Your primary goal is to write clean, maintainable, and highly performant code by strictly adhering to the established architecture and conventions.
+
+---
+
+## 1. Core Architecture: The Monorepo
+
+This project is a **monorepo** managed with `npm workspaces`. All development must respect this structure.
+
+-   **Workspace Root**: The root `[package.json](mdc:package.json)` manages all packages. Use its scripts (`npm run dev`, `npm run build`) for project-wide operations.
+-   **Frontend Package (`web`)**: A Next.js application located in `packages/web`. All UI and client-side logic resides here. See its configuration in `[package.json](mdc:packages/web/package.json)`.
+-   **Backend Package (`api`)**: An Express.js application located in `packages/api`. All server-side logic and database interactions reside here. See its configuration in `[package.json](mdc:packages/api/package.json)`.
+
+---
+
+## 2. ✅ Golden Rules: You MUST ALWAYS...
+
+These are non-negotiable rules for maintaining code quality and consistency.
+
+-   **Use Latest Stable Dependencies**: Before adding any new dependency, you MUST search for its latest stable version and use that. Avoid using outdated packages unless there is a critical compatibility issue.
+-   **Adhere to Type Safety**: All new code in both `web` and `api` packages MUST be written in TypeScript with strict type checking.
+-   **Follow Linter Rules**: Strictly follow the ESLint rules defined in `[packages/web/.eslintrc.json](mdc:packages/web/.eslintrc.json)`. All new code must be free of linter warnings.
+-   **Use the ORM for Database Operations**: All database interactions in the `api` package MUST go through the Prisma Client.
+-   **Keep Schema as the Source of Truth**: Any changes to the database structure MUST be defined in the Prisma schema file at `[packages/api/prisma/schema.prisma](mdc:packages/api/prisma/schema.prisma)`. After editing, apply changes by running `npx prisma migrate dev`.
+
+---
+
+## 3. ❌ Critical Rules: You MUST NEVER...
+
+Violating these rules can compromise security, performance, or maintainability.
+
+-   **NEVER Commit Secrets**: Never commit API keys, database credentials, or any other secrets directly into the source code. Use the `.env` file in the `api` package for all environment variables.
+-   **NEVER Write Raw SQL**: Do not write raw SQL queries. The Prisma ORM is the only acceptable way to interact with the database to prevent SQL injection and ensure type safety.
+-   **NEVER Install Global Dependencies**: All dependencies MUST be added to the appropriate `package.json` file within the `packages/web` or `packages/api` workspaces.
+-   **NEVER Mix Responsibilities**: Do not put backend logic into the `web` package or frontend code into the `api` package. Maintain a strict separation of concerns.
+-   **NEVER Bypass the Linter**: Do not use `// eslint-disable` comments to ignore linter rules unless there is a well-justified and documented reason.
+
+---
+
+## 4. Package-Specific Guidelines
+
+### Frontend (`packages/web`)
+
+-   **Styling**: Use **Tailwind CSS utility classes** directly in JSX components for all styling. Avoid writing custom CSS files. The configuration is in `[postcss.config.mjs](mdc:packages/web/postcss.config.mjs)`.
+-   **Server State Management**: Use **React Query (`@tanstack/react-query`)** for all server state management, including data fetching, caching, and synchronization.
+
+### Backend (`api`)
+
+-   **Code Formatting**: (Pending Setup) Once Prettier/ESLint is configured for the `api` package, you MUST adhere to its formatting rules on every commit.
+
+---
+
+## 5. General Development Philosophy & Best Practices
+
+This section outlines the broader principles that guide all development activities in this project.
+
+### 5.1. Core Principles
+-   **Readability & Maintainability First**: Code is written not just for the computer, but for other developers. Prioritize clarity.
+-   **Consistency is Key**: Adhere to the established coding style and patterns throughout the codebase.
+-   **Meaningful Naming**: Use descriptive names for variables, functions, and components.
+-   **Comment the "Why", Not the "What"**: Your code should explain what it does. Use comments to explain *why* a particular approach was taken.
+
+### 5.2. Code Style Guide (TypeScript & React)
+-   **Modern JavaScript**: MUST use ES6+ syntax (`const`/`let`, arrow functions, `async/await`). `var` is forbidden.
+-   **React Components**: MUST use Function Components with Hooks. Component names MUST be `PascalCase`.
+-   **State Management**: Use `useState` for simple local state. For complex state, `useReducer` or React Query are preferred.
+-   **Type Definitions**: All props, function arguments, and return values MUST be typed using TypeScript.
+-   **Formatting**: Adhere to a 2-space indentation. Use single quotes. Use semicolons.
+
+### 5.3. API & Backend Development
+-   **RESTful Design**: APIs MUST follow RESTful principles, using appropriate HTTP verbs and status codes.
+-   **Standardized Responses**: All API responses MUST be in JSON format. Error responses should follow a consistent structure.
+-   **Database**: All database schemas must be normalized. Use indexes appropriately for performance. All sensitive operations should be wrapped in a transaction.
+
+### 5.4. Security & Performance
+-   **Input Validation**: NEVER trust user input. All input from clients or external sources MUST be validated on the backend.
+-   **Prevent Common Vulnerabilities**: Actively guard against SQL Injection (covered by using Prisma) and XSS attacks (covered by React's default behavior, but remain vigilant).
+-   **Performance Optimization**: Code with performance in mind. This includes optimizing bundle size, lazy loading components, and preventing unnecessary re-renders in React.
+
+### 5.5. Testing Strategy
+-   **Unit Tests**: All critical business logic (utility functions, complex hooks) MUST be covered by unit tests.
+-   **Integration Tests**: Key API endpoints and component interactions SHOULD be covered by integration tests.
+-   **Test Coverage**: Aim for a minimum of 80% test coverage for new features.
+
+### 5.6. Workflow & Collaboration
+-   **Git Commits**: Commit messages MUST follow a conventional format (e.g., `feat:`, `fix:`, `docs:`).
+-   **Code Reviews**: All new code MUST be reviewed by at least one other team member before merging. Reviews should focus on correctness, readability, and adherence to these guidelines.
+-   **Documentation**: Public APIs MUST be documented. The `[PROJECT_OVERVIEW.md](mdc:PROJECT_OVERVIEW.md)` file should be kept up-to-date with any major architectural changes.
+
+
+
