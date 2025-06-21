@@ -15,7 +15,12 @@
       "persistent": true
     },
     "db:push": {
-      "cache": false
+      "cache": false,
+      "persistent": true
+    },
+    "db:seed": {
+      "cache": false,
+      "persistent": true
     },
     "generate": {
       "cache": false

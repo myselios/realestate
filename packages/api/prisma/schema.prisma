@@ -6,8 +6,6 @@
 
 generator client {
   provider      = "prisma-client-js"
-  output        = "../generated/prisma"
-  binaryTargets = ["native", "rhel-openssl-1.0.x"]
 }
 
 datasource db {
@@ -16,73 +14,231 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 지역 정보
-model Region {
-  id        Int      @id @default(autoincrement())
-  sido      String // 시/도
-  sigungu   String // 시/군/구
-  eupmyeondong String // 읍/면/동
-  code      String   @unique // 지역 코드
+// ================================= //
+//        🏢 아파트 도메인
+// ================================= //
 
-  apartments Apartment[]
+model Region {
+  id           Int         @id @default(autoincrement())
+  sido         String // 시/도
+  sigungu      String // 시/군/구
+  eupmyeondong String // 읍/면/동
+  code         String      @unique // 지역 코드
+  latitude     Float? // 중심 위도
+  longitude    Float? // 중심 경도
+
+  apartments     Apartment[]
+  busStops       BusStop[]
+  developmentPlans DevelopmentPlan[]
+  marketTrends   MarketTrend[]
+  populationFlows PopulationFlow[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// 아파트 정보
 model Apartment {
-  id          Int      @id @default(autoincrement())
-  name        String // 아파트 이름
-  address     String // 주소
-  buildYear   Int // 건축년도
-  
-  regionId    Int
-  region      Region   @relation(fields: [regionId], references: [id])
+  id                    String                  @id @default(cuid())
+  name                  String
+  address               String
+  jibunAddress          String
+  buildYear             Int
+  latitude              Float
+  longitude             Float
+  regionId              Int
+  region                Region                  @relation(fields: [regionId], references: [id])
+  transactions          RealEstateTransaction[]
+  transportationScore   TransportationScore?
+  investmentAnalysis    InvestmentAnalysis?
 
-  trades      ApartmentTrade[]
-  amenities   ApartmentAmenity[]
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  @@unique([name, jibunAddress])
+  @@index([regionId])
 }
 
-// 아파트 실거래가
-model ApartmentTrade {
-  id          Int      @id @default(autoincrement())
-  apartmentId Int
+model RealEstateTransaction {
+  id          String   @id @default(cuid())
+  apartmentId String
   apartment   Apartment @relation(fields: [apartmentId], references: [id])
-
-  tradeDate   DateTime // 거래일
+  tradeDate   DateTime
   price       BigInt // 거래 가격
   floor       Int // 층
-  area        Float // 면적 (m^2)
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// 편의시설 정보
-model Amenity {
-  id        Int      @id @default(autoincrement())
-  name      String // 편의시설 이름 (예: 지하철역, 초등학교)
-  type      String // 편의시설 종류 (예: TRANSPORTATION, EDUCATION)
-  
-  apartments ApartmentAmenity[]
+  area        Float // 전용 면적 (m^2)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// 아파트-편의시설 연결 테이블 (다대다 관계)
-model ApartmentAmenity {
-  apartmentId Int
-  amenityId   Int
+
+// ================================= //
+//        🚇 교통 도메인
+// ================================= //
+
+model SubwayLine {
+  id         Int      @id @default(autoincrement())
+  lineNumber String // '1호선', '분당선'
+  name       String   @unique
+  color      String? // 노선 색상 (hex)
+  operator   String? // 운영 기관
+
+  stations SubwayStation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SubwayStation {
+  id               Int      @id @default(autoincrement())
+  name             String
+  stationCode      String? // 역 코드
+  latitude         Float
+  longitude        Float
+  isTransfer       Boolean  @default(false)
+
+  lineId   Int
+  subwayLine SubwayLine @relation(fields: [lineId], references: [id])
   
-  apartment   Apartment @relation(fields: [apartmentId], references: [id])
-  amenity     Amenity   @relation(fields: [amenityId], references: [id])
+  transportationScores TransportationScore[]
 
-  distanceInMeters Int? // 아파트로부터의 거리 (미터)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@id([apartmentId, amenityId])
+  @@unique([name, lineId])
+}
+
+model BusRoute {
+  id          Int       @id @default(autoincrement())
+  routeNumber String @unique
+  routeType   String? // '간선', '지선', '광역'
+  startPoint  String?
+  endPoint    String?
+
+  stops BusStopRoute[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BusStop {
+  id        Int      @id @default(autoincrement())
+  name      String
+  stopId    String?  @unique // 버스정류장 고유ID
+  latitude  Float
+  longitude Float
+
+  regionId  Int
+  region    Region   @relation(fields: [regionId], references: [id])
+  routes    BusStopRoute[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BusStopRoute {
+  busStopId Int
+  busRouteId Int
+
+  busStop   BusStop   @relation(fields: [busStopId], references: [id])
+  busRoute  BusRoute  @relation(fields: [busRouteId], references: [id])
+
+  @@id([busStopId, busRouteId])
+}
+
+model TransportationScore {
+  id                       String @id @default(cuid())
+  apartmentId              String @unique
+  apartment                Apartment @relation(fields: [apartmentId], references: [id])
+  busStations              Json
+  subwayStations           Json
+  
+  nearestSubwayDistance    Int? // 가장 가까운 지하철역까지 거리(m)
+  nearestSubwayId          Int?
+  nearestSubway            SubwayStation? @relation(fields: [nearestSubwayId], references: [id])
+
+  subwayCount_500m         Int      @default(0)
+  subwayCount_1km          Int      @default(0)
+  busStopCount_300m        Int      @default(0)
+  busRouteCount            Int      @default(0)
+  totalTransportationScore Int      @default(0)
+
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}
+
+
+// ================================= //
+//      🏗️ 개발/재개발 도메인
+// ================================= //
+
+model DevelopmentPlan {
+  id                 Int      @id @default(autoincrement())
+  planName           String
+  description        String
+  startDate          DateTime
+  endDate            DateTime
+  category           String
+  status             String
+  latitude           Float?
+  longitude          Float?
+  regionId           Int
+  region             Region   @relation(fields: [regionId], references: [id])
+
+  @@index([regionId])
+}
+
+// ================================= //
+//      📈 시장 동향 도메인
+// ================================= //
+
+model MarketTrend {
+  id                   Int      @id @default(autoincrement())
+  year                 Int
+  month                Int
+  priceIndex           Float
+  transactionVolume    Int
+  unsoldInventory      Int
+  constructionStarts   Int
+  permitsIssued        Int
+  regionId             Int
+  region               Region   @relation(fields: [regionId], references: [id])
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([year, month, regionId])
+}
+
+model PopulationFlow {
+  id           Int      @id @default(autoincrement())
+  year         Int
+  month        Int
+  netMigration Int
+  regionId     Int
+  region       Region   @relation(fields: [regionId], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([year, month, regionId])
+}
+
+// ================================= //
+//      📊 종합 분석 도메인
+// ================================= //
+
+model InvestmentAnalysis {
+  id                     String    @id @default(cuid())
+  apartmentId            String    @unique
+  apartment              Apartment @relation(fields: [apartmentId], references: [id])
+  year                   Int
+  principal              BigInt
+  
+  developmentScore         Int      @default(0)
+  supplyDemandScore        Int      @default(0)
+  policyScore              Int      @default(0)
+  totalInvestmentScore     Int      @default(0)
+  pricePrediction_6m       BigInt?  // 6개월 후 예측 가격
+  pricePrediction_1y       BigInt?  // 1년 후 예측 가격
+  predictionSummary        String?  // 분석 요약 텍스트
+  
+  lastAnalyzedAt           DateTime @updatedAt
 }
