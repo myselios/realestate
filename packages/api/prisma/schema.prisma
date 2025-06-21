@@ -5,8 +5,9 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  provider      = "prisma-client-js"
+  output        = "../generated/prisma"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
 }
 
 datasource db {
@@ -15,6 +16,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Post {
-  // ... existing code ...
+// 지역 정보
+model Region {
+  id        Int      @id @default(autoincrement())
+  sido      String // 시/도
+  sigungu   String // 시/군/구
+  eupmyeondong String // 읍/면/동
+  code      String   @unique // 지역 코드
+
+  apartments Apartment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 아파트 정보
+model Apartment {
+  id          Int      @id @default(autoincrement())
+  name        String // 아파트 이름
+  address     String // 주소
+  buildYear   Int // 건축년도
+  
+  regionId    Int
+  region      Region   @relation(fields: [regionId], references: [id])
+
+  trades      ApartmentTrade[]
+  amenities   ApartmentAmenity[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 아파트 실거래가
+model ApartmentTrade {
+  id          Int      @id @default(autoincrement())
+  apartmentId Int
+  apartment   Apartment @relation(fields: [apartmentId], references: [id])
+
+  tradeDate   DateTime // 거래일
+  price       BigInt // 거래 가격
+  floor       Int // 층
+  area        Float // 면적 (m^2)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 편의시설 정보
+model Amenity {
+  id        Int      @id @default(autoincrement())
+  name      String // 편의시설 이름 (예: 지하철역, 초등학교)
+  type      String // 편의시설 종류 (예: TRANSPORTATION, EDUCATION)
+  
+  apartments ApartmentAmenity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 아파트-편의시설 연결 테이블 (다대다 관계)
+model ApartmentAmenity {
+  apartmentId Int
+  amenityId   Int
+  
+  apartment   Apartment @relation(fields: [apartmentId], references: [id])
+  amenity     Amenity   @relation(fields: [amenityId], references: [id])
+
+  distanceInMeters Int? // 아파트로부터의 거리 (미터)
+
+  @@id([apartmentId, amenityId])
 }

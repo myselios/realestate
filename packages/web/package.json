@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run prisma:generate --workspace=.. && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "npm run prisma:generate --workspace=.."
   },
   "dependencies": {
     "@tanstack/react-query": "^5.80.10",
