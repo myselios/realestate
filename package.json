@@ -9,7 +9,7 @@
     "dev": "npx turbo dev",
     "dev:web": "cd packages/web && npm run dev",
     "dev:api": "npm run dev --workspace=packages/api",
-    "build": "npx turbo build",
+    "build": "turbo run build --filter=web",
     "lint": "npm run lint --workspaces --if-present",
     "prisma:generate": "npx prisma generate --schema=./packages/api/prisma/schema.prisma",
     "prisma:push": "npx turbo db:push --filter=api",
