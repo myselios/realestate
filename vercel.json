@@ -1,0 +1,22 @@
+{
+  "builds": [
+    {
+      "src": "packages/web/next.config.mjs",
+      "use": "@vercel/next"
+    },
+    {
+      "src": "packages/api/src/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/packages/api/src/index.ts"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/packages/web"
+    }
+  ]
+}
