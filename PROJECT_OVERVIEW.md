@@ -21,8 +21,13 @@ realestate/
 │   │   └── tsconfig.json
 │   └── web/
 │       ├── src/
-│       │   └── app/
-│       │       └── page.tsx
+│       │   ├── app/
+│       │   │   ├── layout.tsx
+│       │   │   └── page.tsx
+│       │   └── components/
+│       │       ├── NewlywedApartmentClient.tsx
+│       │       ├── ResultsView.tsx
+│       │       └── DetailView.tsx
 │       ├── public/
 │       ├── package.json
 │       └── next.config.mjs
@@ -35,13 +40,14 @@ realestate/
 
 ### 2.1. 프론트엔드 (`packages/web`)
 
-- **Framework**: Next.js (v15.3.4)
-- **Language**: TypeScript (v5)
-- **Styling**: Tailwind CSS (v4)
-- **UI Libraries**:
-  - React (v19.0.0)
-  - Chart.js (v4.5.0)
-- **State Management**: React Query (v5.80.10)
+- **Framework**: Next.js (v14.2.5)
+- **Language**: TypeScript (v5.5.3)
+- **Styling**: Tailwind CSS (v3.4.6)
+- **UI & Chart Libraries**:
+  - React (v18.3.1)
+  - Recharts (v2.12.7)
+  - Lucide React (v0.417.0)
+- **State Management**: Tanstack Query (v5.51.11)
 
 ### 2.2. 백엔드 (`packages/api`)
 
