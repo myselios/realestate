@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  Portfolio    Portfolio[]
+}
+
+model Apartment {
+  id                    String                  @id
+  name                  String
+  address               String
+  buildYear             Int
+  regionId              Int
+  latitude              Float
+  longitude             Float
+  jibunAddress          String
+  Region                Region                  @relation(fields: [regionId], references: [id])
+  InvestmentAnalysis    InvestmentAnalysis?
+  Portfolio             Portfolio[]
+  RealEstateTransaction RealEstateTransaction[]
+  TransportationScore   TransportationScore?
+
+  @@unique([name, jibunAddress])
+  @@index([regionId])
+}
+
+model BusRoute {
+  id           Int            @id @default(autoincrement())
+  routeNumber  String         @unique
+  routeType    String?
+  startPoint   String?
+  endPoint     String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  BusStopRoute BusStopRoute[]
+}
+
+model BusStop {
+  id           Int            @id @default(autoincrement())
+  name         String
+  stopId       String?        @unique
+  latitude     Float
+  longitude    Float
+  regionId     Int
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  Region       Region         @relation(fields: [regionId], references: [id])
+  BusStopRoute BusStopRoute[]
+}
+
+model BusStopRoute {
+  busStopId  Int
+  busRouteId Int
+  BusRoute   BusRoute @relation(fields: [busRouteId], references: [id])
+  BusStop    BusStop  @relation(fields: [busStopId], references: [id])
+
+  @@id([busStopId, busRouteId])
+}
+
+model DevelopmentPlan {
+  id          Int      @id @default(autoincrement())
+  planName    String
+  status      String
+  latitude    Float?
+  longitude   Float?
+  regionId    Int
+  category    String
+  description String
+  endDate     DateTime
+  startDate   DateTime
+  Region      Region   @relation(fields: [regionId], references: [id])
+
+  @@index([regionId])
+}
+
+model Hospital {
+  id           Int      @id @default(autoincrement())
+  hospitalName String
+  hospitalType String
+  address      String
+  latitude     Float
+  longitude    Float
+  regionId     Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  Region       Region   @relation(fields: [regionId], references: [id])
+}
+
+model InvestmentAnalysis {
+  id                   String    @id
+  totalInvestmentScore Int       @default(0)
+  pricePrediction_1y   BigInt?
+  predictionSummary    String?
+  apartmentId          String    @unique
+  lastAnalyzedAt       DateTime
+  accessibilityScore   Int       @default(0)
+  amenitiesScore       Int       @default(0)
+  marketScore          Int       @default(0)
+  pricePrediction_3y   BigInt?
+  regionalDevScore     Int       @default(0)
+  supplyScore          Int       @default(0)
+  trendScore           Int       @default(0)
+  Apartment            Apartment @relation(fields: [apartmentId], references: [id])
+}
+
+model MarketTrend {
+  id                 Int      @id @default(autoincrement())
+  year               Int
+  month              Int
+  transactionVolume  Int
+  regionId           Int
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+  constructionStarts Int
+  permitsIssued      Int
+  priceIndex         Float
+  unsoldInventory    Int
+  Region             Region   @relation(fields: [regionId], references: [id])
+
+  @@unique([year, month, regionId])
+}
+
+model PopulationFlow {
+  id           Int      @id @default(autoincrement())
+  year         Int
+  month        Int
+  netMigration Int
+  regionId     Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  Region       Region   @relation(fields: [regionId], references: [id])
+
+  @@unique([year, month, regionId])
+}
+
+model Portfolio {
+  id          String    @id
+  userId      String
+  apartmentId String
+  memo        String?
+  createdAt   DateTime  @default(now())
+  Apartment   Apartment @relation(fields: [apartmentId], references: [id])
+  User        User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, apartmentId])
+}
+
+model RealEstateTransaction {
+  id          String    @id
+  tradeDate   DateTime
+  price       BigInt
+  floor       Int
+  area        Float
+  apartmentId String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  Apartment   Apartment @relation(fields: [apartmentId], references: [id])
+}
+
+model Region {
+  id              Int               @id @default(autoincrement())
+  sido            String
+  sigungu         String
+  eupmyeondong    String
+  code            String            @unique
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  latitude        Float?
+  longitude       Float?
+  Apartment       Apartment[]
+  BusStop         BusStop[]
+  DevelopmentPlan DevelopmentPlan[]
+  Hospital        Hospital[]
+  MarketTrend     MarketTrend[]
+  PopulationFlow  PopulationFlow[]
+  School          School[]
+}
+
+model School {
+  id           Int       @id @default(autoincrement())
+  schoolName   String
+  schoolType   String
+  latitude     Float
+  longitude    Float
+  studentCount Int?
+  foundingDate DateTime?
+  regionId     Int
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  Region       Region    @relation(fields: [regionId], references: [id])
+}
+
+model SubwayLine {
+  id            Int             @id @default(autoincrement())
+  lineNumber    String
+  name          String          @unique
+  color         String?
+  operator      String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  SubwayStation SubwayStation[]
+}
+
+model SubwayStation {
+  id                  Int                   @id @default(autoincrement())
+  name                String
+  stationCode         String?
+  latitude            Float
+  longitude           Float
+  isTransfer          Boolean               @default(false)
+  lineId              Int
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  SubwayLine          SubwayLine            @relation(fields: [lineId], references: [id])
+  TransportationScore TransportationScore[]
+
+  @@unique([name, lineId])
+}
+
+model TransportationScore {
+  id                       String         @id
+  apartmentId              String         @unique
+  nearestSubwayDistance    Int?
+  nearestSubwayId          Int?
+  subwayCount_500m         Int            @default(0)
+  subwayCount_1km          Int            @default(0)
+  busStopCount_300m        Int            @default(0)
+  busRouteCount            Int            @default(0)
+  totalTransportationScore Int            @default(0)
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime
+  busStations              Json
+  subwayStations           Json
+  Apartment                Apartment      @relation(fields: [apartmentId], references: [id])
+  SubwayStation            SubwayStation? @relation(fields: [nearestSubwayId], references: [id])
+}
