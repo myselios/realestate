@@ -2,8 +2,22 @@
   "version": 2,
   "builds": [
     {
+      "src": "packages/api/src/index.ts",
+      "use": "@vercel/node"
+    },
+    {
       "src": "packages/web/package.json",
       "use": "@vercel/next"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/packages/api/src/index.ts"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/packages/web"
     }
   ]
 }
