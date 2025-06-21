@@ -1,24 +1,20 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import routes from './routes';
+
+dotenv.config();
 
 const app = express();
-const prisma = new PrismaClient();
 const port = process.env.PORT || 3001;
 
+app.use(cors());
 app.use(express.json());
+
+app.use('/api', routes);
 
 app.get('/', (req, res) => {
   res.send('Hello from the HSMC API!');
-});
-
-// Example API route to get all users
-app.get('/users', async (req, res) => {
-  try {
-    const users = await prisma.user.findMany();
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch users' });
-  }
 });
 
 app.listen(port, () => {
