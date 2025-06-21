@@ -76,7 +76,7 @@ This section outlines the broader principles that guide all development activiti
 ### 5.3. API & Backend Development
 -   **RESTful Design**: APIs MUST follow RESTful principles, using appropriate HTTP verbs and status codes.
 -   **Standardized Responses**: All API responses MUST be in JSON format. Error responses should follow a consistent structure.
--   **Database**: All database schemas must be normalized. Use indexes appropriately for performance. All sensitive operations should be wrapped in a transaction.
+-   **Database**: All database schemas must be normalized. Use indexes appropriately for performance. All sensitive operations should be wrapped in a transaction. This project uses **Supabase** (PostgreSQL) as its database.
 
 ### 5.4. Security & Performance
 -   **Input Validation**: NEVER trust user input. All input from clients or external sources MUST be validated on the backend.
@@ -92,6 +92,7 @@ This section outlines the broader principles that guide all development activiti
 -   **Git Commits**: Commit messages MUST follow a conventional format (e.g., `feat:`, `fix:`, `docs:`).
 -   **Code Reviews**: All new code MUST be reviewed by at least one other team member before merging. Reviews should focus on correctness, readability, and adherence to these guidelines.
 -   **Documentation**: Public APIs MUST be documented. The `[PROJECT_OVERVIEW.md](mdc:PROJECT_OVERVIEW.md)` file should be kept up-to-date with any major architectural changes.
+
 
 
 

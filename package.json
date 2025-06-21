@@ -6,7 +6,7 @@
   ],
   "scripts": {
     "dev": "npm-run-all --parallel dev:*",
-    "dev:web": "npm run dev --workspace=packages/web",
+    "dev:web": "cd packages/web && npm run dev",
     "dev:api": "npm run dev --workspace=packages/api",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present"
