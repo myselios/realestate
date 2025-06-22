@@ -10,37 +10,13 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
-  BarChart as RechartsBarChart,
-  Bar,
 } from "recharts";
-import {
-  Search,
-  Building,
-  DollarSign,
-  TrendingUp,
-  BarChart as BarChartIcon,
-  ChevronLeft,
-  Filter,
-  MapPin,
-  AreaChart,
-  Target,
-  Home,
-  Star,
-  Loader2,
-  ChevronRight,
-  Info,
-} from "lucide-react";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import axios from 'axios';
 
 // UI 컴포넌트 정의 (shadcn/ui 대체)
-const Card = ({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: () => void; }) => (
-  <div onClick={onClick} className={`bg-white shadow-lg rounded-lg overflow-hidden ${className}`}>{children}</div>
+const Card = ({ children, className }: { children: React.ReactNode; className?: string; }) => (
+  <div className={`bg-white shadow-lg rounded-lg overflow-hidden ${className}`}>{children}</div>
 );
 const CardContent = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <div className={`p-6 ${className}`}>{children}</div>
@@ -51,25 +27,6 @@ const CardHeader = ({ children, className }: { children: React.ReactNode; classN
 const CardTitle = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <h3 className={`text-lg font-semibold ${className}`}>{children}</h3>
 );
-const CardDescription = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <p className={`text-sm text-gray-500 ${className}`}>{children}</p>
-);
-const Button = ({ children, onClick, className, variant, size, disabled }: { children: React.ReactNode; onClick?: () => void; className?: string; variant?: string; size?: string; disabled?: boolean; }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50
-      ${variant === 'outline' ? 'border border-input bg-background hover:bg-accent hover:text-accent-foreground' : 'bg-blue-600 text-white hover:bg-blue-700'}
-      ${size === 'icon' ? 'h-10 w-10' : 'px-4 py-2'}
-      ${className}`}
-  >
-    {children}
-  </button>
-);
-const TooltipProvider = ({ children }: { children: React.ReactNode }) => <div>{children}</div>;
-const TooltipTrigger = ({ children }: { children: React.ReactNode }) => <div>{children}</div>;
-const OGTooltip = ({ children }: { children: React.ReactNode }) => <div>{children}</div>;
-const TooltipContent = ({ children }: { children: React.ReactNode }) => <div className="text-xs bg-black text-white p-2 rounded-md shadow-lg my-1">{children}</div>;
 
 // API 응답 타입 정의
 interface Trade {
