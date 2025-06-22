@@ -157,13 +157,15 @@ export default function HomePage() {
     );
 
     return sortedMonthKeys.map((monthKey) => {
-      const entry: { date: string; [key: string]: any } = {
+      const dynamicData = Object.keys(seriesData).reduce((acc, seriesName) => {
+        acc[seriesName] = seriesData[seriesName][monthKey] || null;
+        return acc;
+      }, {} as { [key: string]: number | null });
+
+      return {
         date: dateObjects.get(monthKey)!.toLocaleDateString('ko-KR', { year: 'numeric', month: 'short' }),
+        ...dynamicData,
       };
-      Object.keys(seriesData).forEach((seriesName) => {
-        entry[seriesName] = seriesData[seriesName][monthKey] || null;
-      });
-      return entry;
     });
   }, [trendResults, recommendedAptsWithGrade, isLoadingTrends]);
   
