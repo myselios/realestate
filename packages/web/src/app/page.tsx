@@ -11,6 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import type { Payload } from 'recharts/types/component/DefaultLegendContent';
 import { useQuery, useQueries } from "@tanstack/react-query";
 import axios from 'axios';
 
@@ -169,26 +170,25 @@ export default function HomePage() {
   const lineColors = ["#8884d8", "#82ca9d", "#ffc658", "#ff7300", "#0088FE", "#00C49F"];
   const budgetOptions = Array.from({ length: 9 }, (_, i) => 7 + i); // 7..15
 
-  const handleLegendMouseEnter = (o: any) => {
+  const handleLegendMouseEnter = (o: Payload) => {
     const { dataKey } = o;
-    setLineOpacity(prev => {
-      const newOpacities = { ...prev };
-      Object.keys(newOpacities).forEach(key => {
-        newOpacities[key] = 0.2;
-      });
-      newOpacities[dataKey] = 1;
-      return newOpacities;
-    });
+    if (!dataKey) return;
+
+    const newOpacity = recommendedAptsWithGrade.reduce((acc, { grade, apt }) => {
+      const seriesName = `${grade}_${apt.aptName}`;
+      acc[seriesName] = seriesName === dataKey ? 1 : 0.2;
+      return acc;
+    }, {} as { [key: string]: number });
+    setLineOpacity(newOpacity);
   };
 
   const handleLegendMouseLeave = () => {
-    setLineOpacity(prev => {
-      const newOpacities = { ...prev };
-      Object.keys(newOpacities).forEach(key => {
-        newOpacities[key] = 1;
-      });
-      return newOpacities;
-    });
+    const newOpacity = recommendedAptsWithGrade.reduce((acc, { grade, apt }) => {
+      const seriesName = `${grade}_${apt.aptName}`;
+      acc[seriesName] = 1;
+      return acc;
+    }, {} as { [key: string]: number });
+    setLineOpacity(newOpacity);
   };
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -255,7 +255,7 @@ export default function HomePage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
-                  <Tooltip formatter={(value: number) => `${value.toFixed(2)}억원`} />
+                  <Tooltip formatter={(value) => (typeof value === 'number' ? `${value.toFixed(2)}억원` : value)} />
                   <Legend onMouseEnter={handleLegendMouseEnter} onMouseLeave={handleLegendMouseLeave} />
                   {recommendedAptsWithGrade.map(({ grade, apt }, index) => {
                      const seriesName = `${grade}_${apt.aptName}`;
