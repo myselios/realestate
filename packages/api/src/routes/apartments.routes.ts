@@ -46,91 +46,134 @@ router.get('/trades', async (req, res) => {
 });
 
 // GET /api/apartments/recommendations
-// Fetches apartment recommendations based on a budget.
+// Fetches apartment recommendations based on a budget range.
 // Query params:
-// - budget: the maximum budget
+// - minBudget: the minimum budget
+// - maxBudget: the maximum budget
 router.get('/recommendations', async (req, res) => {
-  const { budget } = req.query;
+  const { minBudget, maxBudget } = req.query;
 
-  if (!budget) {
-    return res.status(400).json({ message: 'Budget is a required query parameter.' });
+  if (!minBudget || !maxBudget) {
+    return res.status(400).json({ message: 'minBudget and maxBudget are required query parameters.' });
   }
 
   try {
-    const budgetBigInt = BigInt(budget as string);
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const minBudgetBigInt = BigInt(minBudget as string);
+    const maxBudgetBigInt = BigInt(maxBudget as string);
 
-    // 1. 예산에 맞는 최근 1년간의 거래를 조회
-    const trades = await prisma.apartmentTrade.findMany({
-      where: {
-        dealAmount: {
-          lte: budgetBigInt,
-        },
-        dealDate: {
-          gte: oneYearAgo,
-        },
-      },
-      select: {
-        id: true,
-        aptName: true,
-        excluUseAr: true,
-        floor: true,
-        dealAmount: true,
-        umdNm: true,
-        sggCd: true,
-      },
-      distinct: ['aptName', 'sggCd', 'umdNm', 'jibun'],
+    // 1. 모든 급지 및 급지 정의를 한 번에 조회
+    const grades = await prisma.grade.findMany({
       orderBy: {
-        dealAmount: 'desc',
+        name: 'asc',
       },
-      take: 500, // 더 많은 후보군 확보
     });
+    const allGradeDefinitions = await prisma.gradeDefinition.findMany();
 
-    // 2. 거래 데이터의 sggCd를 기반으로 GradeDefinition 정보를 가져옴
-    const sggCds = [...new Set(trades.map(t => t.sggCd))];
-    const gradeDefinitions = await prisma.gradeDefinition.findMany({
-      where: {
-        sggCd: {
-          in: sggCds,
+    // gradeId를 키로 사용하는 맵으로 변환하여 조회 성능 향상
+    const definitionsByGradeId = allGradeDefinitions.reduce((acc: Record<number, typeof allGradeDefinitions>, def: (typeof allGradeDefinitions)[0]) => {
+      if (!acc[def.gradeId]) {
+        acc[def.gradeId] = [];
+      }
+      acc[def.gradeId].push(def);
+      return acc;
+    }, {} as Record<number, typeof allGradeDefinitions>);
+
+    const recommendations: Record<string, any> = {};
+
+    // 2. 각 급지별로 예산에 맞는 대표 아파트 찾기
+    for (const grade of grades) {
+      // 3. 메모리에서 현재 급지에 속한 sggCd 목록 찾기
+      const gradeDefinitions = definitionsByGradeId[grade.id] || [];
+      const sggCds = gradeDefinitions.map((def: { sgg_cd: string }) => def.sgg_cd);
+      const sggNmMap = new Map(gradeDefinitions.map((def: { sgg_cd: string, sgg_nm: string }) => [def.sgg_cd, def.sgg_nm]));
+
+      if (sggCds.length === 0) {
+        recommendations[grade.name] = null;
+        continue;
+      }
+
+      // 4. 해당 sggCd 목록과 예산에 맞는 거래 중 최고가 거래 1건 조회
+      const representativeTrade = await prisma.apartmentTrade.findFirst({
+        where: {
+          sggCd: {
+            in: sggCds,
+          },
+          dealAmount: {
+            gte: minBudgetBigInt,
+            lte: maxBudgetBigInt,
+          },
         },
-      },
-      include: {
-        grade: true,
-      },
-    });
+        orderBy: {
+          dealAmount: 'desc',
+        },
+      });
 
-    const sggToGradeMap = new Map<string, { gradeName: string; sggNm: string }>();
-    gradeDefinitions.forEach(def => {
-      sggToGradeMap.set(def.sggCd, { gradeName: def.grade.name, sggNm: def.sggNm });
-    });
-    
-    // 3. 거래 정보와 급지 정보를 결합하고, 급지별로 그룹화
-    const recommendations: Record<string, any[]> = {};
-    for (const apt of trades) {
-      const gradeInfo = sggToGradeMap.get(apt.sggCd);
-      if (gradeInfo) {
-        if (!recommendations[gradeInfo.gradeName]) {
-          recommendations[gradeInfo.gradeName] = [];
-        }
-        if (recommendations[gradeInfo.gradeName].length < 10) {
-           recommendations[gradeInfo.gradeName].push({
-             ...apt,
-             sggNm: gradeInfo.sggNm, // sggNm 추가
-           });
-        }
+      // 5. 대표 거래가 있으면 결과에 추가, 없으면 null로 설정
+      if (representativeTrade) {
+        recommendations[grade.name] = {
+          ...representativeTrade,
+          dealAmount: representativeTrade.dealAmount.toString(),
+          sggNm: sggNmMap.get(representativeTrade.sggCd) || '',
+        };
+      } else {
+        recommendations[grade.name] = null;
       }
     }
 
-    // 4. 급지 순서대로 정렬
-    const sortedRecommendations = Object.fromEntries(
-      Object.entries(recommendations).sort((a, b) => a[0].localeCompare(b[0]))
-    );
-
-    res.json(sortedRecommendations);
+    res.json(recommendations);
   } catch (error) {
     console.error('Failed to fetch recommendations:', error);
     res.status(500).json({ message: 'Error fetching recommendations' });
+  }
+});
+
+// GET /api/apartments/trends
+// Fetches the price trend for a specific apartment over the last 2 years.
+// Query params:
+// - aptName: The name of the apartment
+// - sggCd: The sgg code of the apartment's location
+// - excluUseAr: The exclusive use area of the apartment
+router.get('/trends', async (req, res) => {
+  const { aptName, sggCd, excluUseAr } = req.query;
+
+  if (!aptName || !sggCd || !excluUseAr) {
+    return res
+      .status(400)
+      .json({ message: 'aptName, sggCd, and excluUseAr are required query parameters.' });
+  }
+
+  try {
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+
+    const trends = await prisma.apartmentTrade.findMany({
+      where: {
+        aptName: aptName as string,
+        sggCd: sggCd as string,
+        excluUseAr: parseFloat(excluUseAr as string),
+        dealDate: {
+          gte: twoYearsAgo,
+        },
+      },
+      orderBy: {
+        dealDate: 'asc',
+      },
+      select: {
+        dealDate: true,
+        dealAmount: true,
+      },
+    });
+
+    // Convert BigInt to string for JSON serialization
+    const serializedTrends = trends.map((trade: { dealDate: Date; dealAmount: bigint }) => ({
+      ...trade,
+      dealAmount: trade.dealAmount.toString(),
+    }));
+
+    res.json(serializedTrends);
+  } catch (error) {
+    console.error('Failed to fetch apartment trends:', error);
+    res.status(500).json({ message: 'Error fetching apartment trends' });
   }
 });
 
