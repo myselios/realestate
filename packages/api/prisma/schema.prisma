@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,242 +10,101 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id           String      @id @default(cuid())
-  email        String      @unique
-  name         String?
-  passwordHash String
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  Portfolio    Portfolio[]
+model Region {
+  id              String    @id @default(uuid()) // 내부적으로 사용할 고유 ID
+
+  // --- API 명세 기반 필드 ---
+  region_cd       String    @unique // 지역코드
+  sido_cd         String?            // 시도코드
+  sgg_cd          String?            // 시군구코드
+  umd_cd          String?            // 읍면동코드
+  ri_cd           String?            // 리코드
+  locatjumin_cd   String?            // 지역코드_주민
+  locatjijuk_cd   String?            // 지역코드_지적
+  locatadd_nm     String             // 지역주소명
+  locat_order     Int?               // 서열
+  locat_rm        String?            // 비고
+  locathigh_cd    String?            // 상위지역코드
+  locallow_nm     String?            // 최하위지역명
+  adpt_de         String?            // 생성일
+
+  // --- 타임스탬프 ---
+  createdAt       DateTime  @default(now())
+}
+
+model Grade {
+  id              Int @id @default(autoincrement())
+  name            String @unique // 예: "1급지", "2급지"
+  
+  definitions     GradeDefinition[]
+  createdAt       DateTime @default(now())
+}
+
+model GradeDefinition {
+  id              Int @id @default(autoincrement())
+  sgg_cd          String @unique // 시군구 법정동 코드 (앞 5자리)
+  sgg_nm          String // 시군구 이름 (예: "강남구")
+  sido_nm         String // 시도 이름 (예: "서울특별시")
+
+  gradeId         Int
+  grade           Grade @relation(fields: [gradeId], references: [id])
+
+  createdAt       DateTime @default(now())
 }
 
 model Apartment {
-  id                    String                  @id
-  name                  String
-  address               String
-  buildYear             Int
-  regionId              Int
-  latitude              Float
-  longitude             Float
-  jibunAddress          String
-  Region                Region                  @relation(fields: [regionId], references: [id])
-  InvestmentAnalysis    InvestmentAnalysis?
-  Portfolio             Portfolio[]
-  RealEstateTransaction RealEstateTransaction[]
-  TransportationScore   TransportationScore?
+  id              String    @id @default(uuid())
+  kaptCode        String    @unique // 공동주택코드
+  kaptName        String    // 아파트 이름
+  regionCode      String    // 법정동 코드
+  buildYear       Int       // 건축년도
+  
+  // --- 타임스탬프 ---
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  @@unique([name, jibunAddress])
-  @@index([regionId])
-}
-
-model BusRoute {
-  id           Int            @id @default(autoincrement())
-  routeNumber  String         @unique
-  routeType    String?
-  startPoint   String?
-  endPoint     String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime
-  BusStopRoute BusStopRoute[]
-}
-
-model BusStop {
-  id           Int            @id @default(autoincrement())
-  name         String
-  stopId       String?        @unique
-  latitude     Float
-  longitude    Float
-  regionId     Int
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime
-  Region       Region         @relation(fields: [regionId], references: [id])
-  BusStopRoute BusStopRoute[]
-}
-
-model BusStopRoute {
-  busStopId  Int
-  busRouteId Int
-  BusRoute   BusRoute @relation(fields: [busRouteId], references: [id])
-  BusStop    BusStop  @relation(fields: [busStopId], references: [id])
-
-  @@id([busStopId, busRouteId])
-}
-
-model DevelopmentPlan {
-  id          Int      @id @default(autoincrement())
-  planName    String
-  status      String
-  latitude    Float?
-  longitude   Float?
-  regionId    Int
-  category    String
-  description String
-  endDate     DateTime
-  startDate   DateTime
-  Region      Region   @relation(fields: [regionId], references: [id])
-
-  @@index([regionId])
-}
-
-model Hospital {
-  id           Int      @id @default(autoincrement())
-  hospitalName String
-  hospitalType String
-  address      String
-  latitude     Float
-  longitude    Float
-  regionId     Int
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime
-  Region       Region   @relation(fields: [regionId], references: [id])
+  InvestmentAnalysis InvestmentAnalysis[]
 }
 
 model InvestmentAnalysis {
-  id                   String    @id
-  totalInvestmentScore Int       @default(0)
-  pricePrediction_1y   BigInt?
-  predictionSummary    String?
-  apartmentId          String    @unique
-  lastAnalyzedAt       DateTime
-  accessibilityScore   Int       @default(0)
-  amenitiesScore       Int       @default(0)
-  marketScore          Int       @default(0)
-  pricePrediction_3y   BigInt?
-  regionalDevScore     Int       @default(0)
-  supplyScore          Int       @default(0)
-  trendScore           Int       @default(0)
-  Apartment            Apartment @relation(fields: [apartmentId], references: [id])
+  id              String    @id @default(uuid())
+  apartmentId     String    // Apartment 모델의 id
+  apartment       Apartment @relation(fields: [apartmentId], references: [id])
+
+  // 분석 결과 필드
+  price           BigInt    // 예상 가격
+  grade           String    // 급지 (예: "1급지")
+
+  // --- 타임스탬프 ---
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
-model MarketTrend {
-  id                 Int      @id @default(autoincrement())
-  year               Int
-  month              Int
-  transactionVolume  Int
-  regionId           Int
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime
-  constructionStarts Int
-  permitsIssued      Int
-  priceIndex         Float
-  unsoldInventory    Int
-  Region             Region   @relation(fields: [regionId], references: [id])
+model ApartmentTrade {
+  id              String    @id @default(uuid())
+  
+  // 거래 정보
+  dealAmount      BigInt    // 거래금액 (원 단위)
+  dealYear        Int       // 거래년도
+  dealMonth       Int       // 거래월
+  dealDay         Int       // 거래일
+  dealDate        DateTime  // 거래일자
 
-  @@unique([year, month, regionId])
-}
+  // 아파트 정보
+  aptName         String    // 아파트명
+  buildYear       Int       // 건축년도
+  floor           Int       // 층
+  excluUseAr      Float     // 전용면적 (m^2)
+  jibun           String    // 지번
 
-model PopulationFlow {
-  id           Int      @id @default(autoincrement())
-  year         Int
-  month        Int
-  netMigration Int
-  regionId     Int
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime
-  Region       Region   @relation(fields: [regionId], references: [id])
+  // 지역 정보
+  sggCd           String    // 시군구코드
+  umdNm           String    // 읍면동명
 
-  @@unique([year, month, regionId])
-}
+  // --- 타임스탬프 ---
+  createdAt       DateTime  @default(now())
 
-model Portfolio {
-  id          String    @id
-  userId      String
-  apartmentId String
-  memo        String?
-  createdAt   DateTime  @default(now())
-  Apartment   Apartment @relation(fields: [apartmentId], references: [id])
-  User        User      @relation(fields: [userId], references: [id])
-
-  @@unique([userId, apartmentId])
-}
-
-model RealEstateTransaction {
-  id          String    @id
-  tradeDate   DateTime
-  price       BigInt
-  floor       Int
-  area        Float
-  apartmentId String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime
-  Apartment   Apartment @relation(fields: [apartmentId], references: [id])
-}
-
-model Region {
-  id              Int               @id @default(autoincrement())
-  sido            String
-  sigungu         String
-  eupmyeondong    String
-  code            String            @unique
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime
-  latitude        Float?
-  longitude       Float?
-  Apartment       Apartment[]
-  BusStop         BusStop[]
-  DevelopmentPlan DevelopmentPlan[]
-  Hospital        Hospital[]
-  MarketTrend     MarketTrend[]
-  PopulationFlow  PopulationFlow[]
-  School          School[]
-}
-
-model School {
-  id           Int       @id @default(autoincrement())
-  schoolName   String
-  schoolType   String
-  latitude     Float
-  longitude    Float
-  studentCount Int?
-  foundingDate DateTime?
-  regionId     Int
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime
-  Region       Region    @relation(fields: [regionId], references: [id])
-}
-
-model SubwayLine {
-  id            Int             @id @default(autoincrement())
-  lineNumber    String
-  name          String          @unique
-  color         String?
-  operator      String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime
-  SubwayStation SubwayStation[]
-}
-
-model SubwayStation {
-  id                  Int                   @id @default(autoincrement())
-  name                String
-  stationCode         String?
-  latitude            Float
-  longitude           Float
-  isTransfer          Boolean               @default(false)
-  lineId              Int
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime
-  SubwayLine          SubwayLine            @relation(fields: [lineId], references: [id])
-  TransportationScore TransportationScore[]
-
-  @@unique([name, lineId])
-}
-
-model TransportationScore {
-  id                       String         @id
-  apartmentId              String         @unique
-  nearestSubwayDistance    Int?
-  nearestSubwayId          Int?
-  subwayCount_500m         Int            @default(0)
-  subwayCount_1km          Int            @default(0)
-  busStopCount_300m        Int            @default(0)
-  busRouteCount            Int            @default(0)
-  totalTransportationScore Int            @default(0)
-  createdAt                DateTime       @default(now())
-  updatedAt                DateTime
-  busStations              Json
-  subwayStations           Json
-  Apartment                Apartment      @relation(fields: [apartmentId], references: [id])
-  SubwayStation            SubwayStation? @relation(fields: [nearestSubwayId], references: [id])
+  @@index([dealDate])
+  @@index([sggCd])
+  @@index([dealAmount])
 }
